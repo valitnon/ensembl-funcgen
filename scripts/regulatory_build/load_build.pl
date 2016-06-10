@@ -118,17 +118,18 @@ sub main {
   
   use Bio::EnsEMBL::Funcgen::DBSQL::RegulatoryBuildAdaptor;
   my $regulatory_build_adaptor = Bio::EnsEMBL::Funcgen::DBSQL::RegulatoryBuildAdaptor->new($db);
-  my $current_regulatory_build = $regulatory_build_adaptor->fetch_current_regulatory_build;
+  #my $current_regulatory_build = $regulatory_build_adaptor->fetch_current_regulatory_build;
+  my $current_regulatory_build = undef;
   
-  if (! defined $current_regulatory_build) {
-    die("Couldn't find regulatory build in the database!");
-  }
-  print "Found regulatory build: " 
-    . $current_regulatory_build->name 
-    . " " . $current_regulatory_build->version 
-    . " from  " 
-    . $current_regulatory_build->initial_release_date 
-    . " in the database.\n";
+  #if (! defined $current_regulatory_build) {
+  #  die("Couldn't find regulatory build in the database!");
+  #}
+  #print "Found regulatory build: " 
+  #  . $current_regulatory_build->name 
+  #  . " " . $current_regulatory_build->version 
+  #  . " from  " 
+  #  . $current_regulatory_build->initial_release_date 
+  #  . " in the database.\n";
   
 #   print_log("Getting analysis\n");
 #   my $analysis = get_analysis($db);
@@ -160,12 +161,13 @@ sub main {
   print_log("Creating regulatory_feature table\n");
   compute_regulatory_features($options, $ctypes, $feature_type, $stable_id, $count_hash, $slice, $db, $new_regulatory_build);
   
-  print_log("Creating regulatory_annotation table\n");
-  compute_regulatory_annotations($options);
+  #DEBUG
+  #print_log("Creating regulatory_annotation table\n");
+  #compute_regulatory_annotations($options);
   print_log("Updating meta table\n");
   
-  $current_regulatory_build->is_current(0);
-  $regulatory_build_adaptor->update($current_regulatory_build);
+  #$current_regulatory_build->is_current(0);
+  #$regulatory_build_adaptor->update($current_regulatory_build);
 
   $new_regulatory_build->is_current(1);
   $regulatory_build_adaptor->update($new_regulatory_build);
@@ -367,31 +369,33 @@ sub run {
 sub get_stable_id {
   my ($options, $db) = @_;
 
-  my ($ofh, $old) = tempfile();
-  sub cmp_features {
-    if ($a->seq_region_name ne $b->seq_region_name) {
-      return $a->seq_region_name cmp $b->seq_region_name;
-    } else {
-      return $a->seq_region_start <=> $b->seq_region_start;
-    }
-  }
-  my $feature_set = $db->get_adaptor('FeatureSet')->fetch_by_name('RegulatoryFeatures:MultiCell_v'.$options->{old_version});
-  my ($overlaps, $max_id);
+  #my ($ofh, $old) = tempfile();
+  #sub cmp_features {
+  #  if ($a->seq_region_name ne $b->seq_region_name) {
+  #    return $a->seq_region_name cmp $b->seq_region_name;
+  #  } else {
+  #    return $a->seq_region_start <=> $b->seq_region_start;
+  #  }
+  #}
+  #my $feature_set = $db->get_adaptor('FeatureSet')->fetch_by_name('RegulatoryFeatures:MultiCell_v'.$options->{old_version});
+  #my ($overlaps, $max_id);
   my ($fh, $new) = tempfile();
   close $fh;
   run("bigBedToBed $options->{base_dir}/overview/RegBuild.bb $new");
 
-  if (defined $feature_set) {
-    foreach my $feature (sort cmp_features @{$feature_set->get_all_Features()}) {
-      print $ofh join("\t", ($feature->seq_region_name, $feature->bound_start, $feature->bound_end, $feature->feature_type->name, substr($feature->stable_id, 4))) . "\n";
-    }
-    close $ofh;
+  #if (defined $feature_set) {
+	  #foreach my $feature (sort cmp_features @{$feature_set->get_all_Features()}) {
+	    #print $ofh join("\t", ($feature->seq_region_name, $feature->bound_start, $feature->bound_end, $feature->feature_type->name, substr($feature->stable_id, 4))) . "\n";
+      #}
+    #close $ofh;
+    #
+    #($overlaps, $max_id) = get_overlaps_between_files($old, $new);
+    #} else {
+	  #($overlaps, $max_id) = ([], 0);
+    #}
 
-    ($overlaps, $max_id) = get_overlaps_between_files($old, $new);
-  } else {
-    ($overlaps, $max_id) = ([], 0);
-  }
-
+  my $old = "/lustre/scratch110/ensembl/dz1/85_38/old_build.clean.bed";
+  my ($overlaps, $max_id) = get_overlaps_between_files($old, $new);
 # Go through overlaps in order of increasing overlap length. This means that you should always 
 # overwrite an overlap with a later one. 
   sub cmp_overlaps {
@@ -439,7 +443,14 @@ sub get_stable_id {
   }
   close $in;
   unlink $new;
-  unlink $old;
+  #unlink $old;
+
+  # DEBUG
+  open $fh, ">", "/nfs/users/nfs_d/dz1/id_mappings.txt";
+  for my $key (keys %stable_id_hash) {
+    print $fh "$key\t$stable_id_hash{$key}\n";
+  }
+  close $fh;
 
   return \%stable_id_hash;
 }
@@ -713,6 +724,7 @@ sub process_regulatory_build_file {
       stable_id           => $stable_id->{$name},
 #       analysis            => $analysis,
       regulatory_build_id => $new_regulatory_build->dbID,
+      _regulatory_activity => [],
     });
     
     $regulatory_features->{$name} = $regulatory_feature;
@@ -895,9 +907,9 @@ sub create_regulatory_build_object {
   
   use Bio::EnsEMBL::Funcgen::RegulatoryBuild;
   my $new_regulatory_build = Bio::EnsEMBL::Funcgen::RegulatoryBuild->new(
-    -name            => 'The new ' . $current_regulatory_build->name,
-    -feature_type_id => $current_regulatory_build->feature_type_id,
-    -analysis_id     => $current_regulatory_build->analysis_id,
+    -name            => 'The Ensembl Regulatory Build',
+    -feature_type_id => 19,
+    -analysis_id     => 16,
     -is_current      => 0,
   );
   
@@ -906,12 +918,12 @@ sub create_regulatory_build_object {
   $year += 1900;
   $mon += 1;
   my ($main, $update);
-  my $version = $current_regulatory_build->version;
+  my $version = "13.0";
   if (defined $version) {
     ($main, $update) = split('.', $version);
     if ($is_small_update) {
 
-      my $initial_release_date = $current_regulatory_build->initial_release_date;
+      my $initial_release_date = "2016-1";
       $new_regulatory_build->initial_release_date($initial_release_date);
 
       $update += 1;
