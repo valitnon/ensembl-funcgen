@@ -156,14 +156,12 @@ sub get_data_from_csv {
             next;    # ignore input file header
         }
 
-        my ($accession,             $epigenome_name,     $feature_type_name,
-            $br,                    $tr,
-            $paired_end_tag,        $multiple,
-            $gender,
-            $md5,                   $local_url,          $analysis_name,
-            $exp_group_name,        $ontology_xref_accs, $xref_accs,
-            $epigenome_description, $controlled_by,      $download_url,
-            $info
+        my ($accession,             $epigenome_name,    	$feature_type_name,
+            $br,                    $tr,					$gender,
+            $md5,                   $local_url,         	$analysis_name,
+            $exp_group_name,        $assay_xrefs,			$ontology_xref_accs, 
+			$xref_accs,    	        $epigenome_description,	$controlled_by,      
+			$download_url,			$info
         ) = split /\t/;
 
         my $entry = {};
@@ -172,14 +170,13 @@ sub get_data_from_csv {
         $entry->{feature_type_name}     = $feature_type_name;
         $entry->{br}                    = $br;
         $entry->{tr}                    = $tr;
-        $entry->{paired_end_tag}        = $paired_end_tag;
-        $entry->{multiple}              = $multiple;
-        $entry->{md5}                   = $md5;
-        $entry->{gender}                = $gender;
+		$entry->{gender}                = $gender;
+		$entry->{md5}                   = $md5;
         $entry->{local_url}             = $local_url;
         $entry->{analysis_name}         = $analysis_name;
         $entry->{exp_group_name}        = $exp_group_name;
-        $entry->{ontology_xref_accs}    = $ontology_xref_accs;
+        $entry->{assay_xrefs}        	= $assay_xrefs;
+		$entry->{ontology_xref_accs}    = $ontology_xref_accs;
         $entry->{xref_accs}             = $xref_accs;
         $entry->{epigenome_description} = $epigenome_description;
         $entry->{controlled_by}         = $controlled_by;
@@ -229,9 +226,9 @@ sub verify_entry_metadata {
     }
 
     my @optional = qw(
-        gender        ontology_xref_accs
-        xref_accs     epigenome_description
-        controlled_by download_url
+        gender        			assay_xrefs
+		ontology_xref_accs		xref_accs     
+		epigenome_description	controlled_by download_url
         info
     );
 
@@ -261,18 +258,17 @@ sub fetch_adaptors {
         -species => $cfg->{general}->{species},
     );
 
-    $adaptors{epigenome}    = $dba->get_EpigenomeAdaptor();
-    $adaptors{feature_type} = $dba->get_FeatureTypeAdaptor();
-    $adaptors{analysis}     = $dba->get_AnalysisAdaptor();
-    $adaptors{exp_group}    = $dba->get_ExperimentalGroupAdaptor();
-    $adaptors{experiment}   = $dba->get_ExperimentAdaptor();
-    $adaptors{read_file_experimental_configuration}    = $dba->get_ReadFileExperimentalConfigurationAdaptor();
-    $adaptors{read_file}    = $dba->get_ReadFileAdaptor();
-    
-
+	$adaptors{epigenome}    = $dba->get_adaptor('Epigenome');
+	$adaptors{feature_type}    = $dba->get_adaptor('FeatureType');
+	$adaptors{analysis}    = $dba->get_adaptor('Analysis');
+	$adaptors{exp_group}    = $dba->get_adaptor('ExperimentalGroup');
+	$adaptors{experiment}    = $dba->get_adaptor('Experiment');
+	$adaptors{read_file_experimental_configuration}    = $dba->get_Adaptor('ReadFileExperimentalConfiguration');
+	$adaptors{read_file}    = $dba->get_adaptor('ReadFile');
+	
     $adaptors{db}       = $dba;
     $adaptors{db_entry} = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($dba);
-
+	############# HERE ##############
     return \%adaptors;
 }
 

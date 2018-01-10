@@ -941,7 +941,6 @@ CREATE TABLE `data_file` (
 @column name            Name for the read file object
 @column analysis_id     @link analysis ID
 @column is_paired_end   Indicates whether it is paired end
-@column paired_with     (not used)
 @column file_size       (not used)
 @column read_length     (not used)
 @column md5sum          (not used)
@@ -959,7 +958,6 @@ CREATE TABLE `read_file` (
   `name` varchar(300) NOT NULL,
   `analysis_id` smallint(5) unsigned NOT NULL,
   `is_paired_end` tinyint(1) DEFAULT NULL,
-  `paired_with` int(10) DEFAULT NULL,
   `file_size` bigint(20) DEFAULT NULL,
   `read_length` int(10) DEFAULT NULL,
   `md5sum` varchar(45) DEFAULT NULL,
@@ -997,6 +995,7 @@ CREATE TABLE `read_file_experimental_configuration` (
   `multiple` int(11) DEFAULT '1',
   PRIMARY KEY (`read_file_experimental_configuration_id`),
   UNIQUE KEY `name_exp_idx` (`experiment_id`,`biological_replicate`,`technical_replicate`),
+  UNIQUE KEY `read_file_idx` (`read_file_id`),
   KEY `experiment_idx` (`experiment_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 

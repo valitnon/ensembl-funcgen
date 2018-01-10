@@ -1,5 +1,5 @@
 use strict;
-use clsRegisterMetadata;
+use Bio::EnsEMBL::Funcgen::clsRegisterMetadata;
 use REST::Client;
 use JSON;
 use Data::Dumper;
@@ -89,10 +89,9 @@ if ((substr $localFilePath, -1) ne '/'){
 }
 
 my @lstRegMeta;
-my @lstCtlClsRegMeta;
 
 #Create a clsRegisterMetadata object with the column headers and add it to the array
-my $clsRegMetaHead = store_row('accession', 'epigenome', 'feature_type', 'biological_replicate', 'technical_replicate', 'gender', 'md5_checksum', 'local_url', 'analysis', 'experimental_group', 'assay_xrefs', 'ontology_xrefs', 'xrefs', 'epigenome_description', 'control_id', 'download_url', 'info');
+my $clsRegMetaHead = store_row('accession', 'experiment_accession', 'epigenome', 'feature_type', 'biological_replicate', 'new_biological_replicate', 'technical_replicate', 'new_technical_replicate', 'gender', 'md5_checksum', 'local_url', 'analysis', 'experimental_group', 'assay_xrefs', 'ontology_xrefs', 'xrefs', 'epigenome_description', 'control_id', 'paired', 'paired_end_tag', 'read_length', 'multiple', 'download_url', 'info');
 push @lstRegMeta, $clsRegMetaHead;
 
 #open file
@@ -106,10 +105,13 @@ while (my $fullRow = <$fh>) {
 	
 	#init varaiables
 	my $accession= '-';
+	my $expAccession= '-';
 	my $epigenome = '-';
 	my $featureType = '-';
 	my $bioReplicate = '-';
+	my $newBioReplicate = '-';
 	my $techReplicate = '-';
+	my $newTechReplicate = '-';
 	my $gender = '-';
 	my $md5Check = '-';
 	my $localUrl = '-';
@@ -138,13 +140,14 @@ while (my $fullRow = <$fh>) {
 		#Experiments
 		my @experiments = @{$rEData->{'related_datasets'}};
 		
-		#get control ID
-		my ($controlAccession, $infoControl) = get_control_id(\@experiments);
+		#get control experiments info
+		my ($infoControl) = get_control_info(\@experiments);
 		
 		my @lstControls;
 		#loop experiments
 		foreach my $exp (@experiments) {
 			my $target;
+			#my %lstMultiple;
 			if ($exp->{'target'}->{'label'}){
 				$target = $exp->{'target'}->{'label'};
 			}
@@ -167,7 +170,18 @@ while (my $fullRow = <$fh>) {
 			
 			#filter experiments by assay
 			my $assay = $exp->{'assay_title'};
-			if ((grep( /^$assay$/i, @lstDbAssays)) && ($swTarget==0)){
+			my $expReleased=0;
+			
+			#check status of the experiment
+			if (uc $exp->{'status'} eq 'RELEASED'){
+				$expReleased=1;
+			}
+
+			if ((grep( /^$assay$/i, @lstDbAssays)) && ($swTarget==0) && ($expReleased==1)){
+				
+				#experiment accession
+				$expAccession = $exp->{'accession'};
+				
 				#normalize the assay term
 				$assay = check_db_value($assay, \%hshAnalysis);
 
@@ -199,7 +213,7 @@ while (my $fullRow = <$fh>) {
 							push @lstErrors, "experiment: ".$exp->{'accession'}."\tanlysis: $analysis\terror: Not found in analysis table";
 						}
 						$analysis = $DBAnalysis;
-						$controlId = $controlAccession;
+						#$controlId = $controlAccession;
 						$info ='-';
 					}else{
 						$analysis = '-';
@@ -213,6 +227,7 @@ while (my $fullRow = <$fh>) {
 				my @replicates = @{$exp->{'replicates'}};
 				my $rep = @replicates[0]; #get the information from the first replicate
 				my $termName = '-';
+				
 				if (uc $exp->{'biosample_term_name'} ne 'UNKNOWN'){
 					$termName = $exp->{'biosample_term_name'};
 				}
@@ -230,49 +245,60 @@ while (my $fullRow = <$fh>) {
 				
 				#Normalize gender
 				$gender = check_db_value($rep->{'library'}->{'biosample'}->{'sex'}, \%hshGender);
-				
-				
-				
+					
 				#files
 				my @files = @{$exp->{'files'}};
 				foreach my $file (@files){
+					my $paired = 'No',
+					my $paired_end_tag = '-';
+					my $read_length = '-';
+					my $multiple = '-';
+					
+					my $fileStatus=0;
+					#check file status
+					if (uc $file->{'status'} eq 'RELEASED'){
+						$fileStatus=1;
+					}
 					#get only fastq files
-					if (uc $file->{'file_format'} eq 'FASTQ'){
+					if ((uc $file->{'file_format'} eq 'FASTQ') && ($fileStatus == 1)){
+						
 						#accession
 						$accession = $file->{'accession'};
 						#md5 checksum
 						$md5Check = $file->{'md5sum'};
+						#replicates
 						$bioReplicate = $file->{'biological_replicates'}[0];
+						$newBioReplicate = $bioReplicate;
 						$techReplicate = (split '_', $file->{'technical_replicates'}[0])[-1];
+						$newTechReplicate = $techReplicate;
+						#paired and paired end tag
+						if (uc $file->{'run_type'} eq 'PAIRED-ENDED' ){
+							$paired ='YES';
+							$paired_end_tag = $file->{'paired_end'};
+						}
 						
-						#check replicates numeration
-						if ($epigenome.$target ne $epiFeature){
-							#epigenome + target has changed
-							if ($swBioRep == 0){
-								#Error
-								push @lstErrors, "experiment: ".$exp->{'accession'}."\tReplicates: Biological\terror: Numeration error found";
-							}
-							if ($swTecRep == 0){
-								#Error
-								push @lstErrors, "experiment: ".$exp->{'accession'}."\tReplicates: Technical\terror: Numeration error found";
-							}
-							$swBioRep=0;
-							$swTecRep=0;
-							$epiFeature = $epigenome.$target;
+						#read length
+						$read_length = $file->{'read_length'};
+						
+						#get controled by accessions (only in ChIP-Seq)
+						$controlId='-';
+						if (uc $assay eq 'CHIP-SEQ'){
+							my @controlledId;
+							if ($file->{'controlled_by'}){
+								@controlledId = @{$file->{'controlled_by'}};
+								$controlId='';
+								foreach my $controledBy (@controlledId){
+									if ($controlId ne ''){
+										$controlId.=', ';
+									}
+									$controlId.= (split '/', $controledBy)[-1];
+								}
+							}#else{
+								#no controled_by field
+								#push @lstErrors, "file: ".$accession."\tControlled_by: Missing\terror: Controlled_by field missing";
+								#}
 						}
-
-						if ($swBioRep == 0){
-							if ($bioReplicate == 1){
-								#first Bioreplicate found
-								$swBioRep=1;
-							}
-						}
-						if ($swTecRep == 0){
-							if ($techReplicate==1){
-								#first Techreplicate found
-								$swTecRep=1;
-							}
-						}
+					
 						
 						#dowload url
 						if ($file->{'href'}){
@@ -282,14 +308,16 @@ while (my $fullRow = <$fh>) {
 						
 						if (uc $target eq 'WCE'){
 							#assign values to object Register Metadata
-							my $clsCtlRegMeta = store_row($accession, $epigenome, $featureType, $bioReplicate, $techReplicate, $gender, $md5Check, $localUrl, $analysis, $expGroup, $assayXrefs, $ontXrefs, $xrefs, $epiDesc, $controlId, $downUrl, $info);
+							my $clsCtlRegMeta = store_row($accession, $expAccession, $epigenome, $featureType, $bioReplicate, $newBioReplicate, $techReplicate, $newTechReplicate, $gender, $md5Check, $localUrl, $analysis, $expGroup, $assayXrefs, $ontXrefs, $xrefs, $epiDesc, $controlId, $paired, $paired_end_tag, $read_length, $multiple, $downUrl, $info);
 							#Add the object to the list of control rows
 							push @lstControls, $clsCtlRegMeta;
+							
 						}else{
 							#assign values to object Register Metadata
-							my $clsRegMeta = store_row($accession, $epigenome, $featureType, $bioReplicate, $techReplicate, $gender, $md5Check, $localUrl, $analysis, $expGroup, $assayXrefs, $ontXrefs, $xrefs, $epiDesc, $controlId, $downUrl, $info);
+							my $clsRegMeta = store_row($accession, $expAccession, $epigenome, $featureType, $bioReplicate, $newBioReplicate, $techReplicate, $newTechReplicate, $gender, $md5Check, $localUrl, $analysis, $expGroup, $assayXrefs, $ontXrefs, $xrefs, $epiDesc, $controlId, $paired, $paired_end_tag, $read_length, $multiple, $downUrl, $info);
 							#Add the object to the list of rows
 							push @lstRegMeta, $clsRegMeta;
+							
 						}
 					}
 				}
@@ -311,6 +339,7 @@ if (@lstErrors){
 		print $errorVal."\n";
 	}
 }else{
+	check_replicates_numbers_and_multiple(\@lstRegMeta);
 	foreach my $reg (@lstRegMeta) {
 		print $reg->csv_row."\n";
 	}
@@ -318,23 +347,160 @@ if (@lstErrors){
 
 ##################### END MAIN FUNCTION ##############################
 
-sub get_control_id{
+sub check_replicates_numbers_and_multiple{
+	my $lstObjs = shift;
+	my @lstRegMeta = @{$lstObjs};
+	my @lstDone;
+	foreach my $regMeta (@lstRegMeta){
+		my $epigenome = $regMeta->get('epigenome');
+		my $feature = $regMeta->get('feature_type');
+		
+		my $epi_feature = $epigenome.$feature;
+		if ( not (grep(/^$epi_feature$/, @lstDone)) && ($regMeta->get('accession') ne 'accession')) {
+			#not checked yet
+			
+			my $expAccession = $regMeta->get('experiment_accession');
+			
+			#Add the experiment to the cheked list
+			push @lstDone, $epi_feature;
+			
+			#get the objects with the same experiment (epigenome + feature_type)
+			my $lstExperiment = get_experiments($epigenome, $feature, $expAccession, \@lstRegMeta);
+			
+			my @bioRep;
+			my @techRep;
+			my $i=0;
+			#load replicate numbers
+			foreach my $objSelected (@{$lstExperiment}){
+				$bioRep[$i][0] = $objSelected->get('biological_replicate');
+				$bioRep[$i][1] = $objSelected;
+				
+				$techRep[$i][0] = $objSelected->get('technical_replicate');
+				$techRep[$i][1] = $objSelected;
+				$i++;
+			}
+			
+
+			#sort replicates
+			my @sortedBio = sort { $a->[0] <=> $b->[0] } @bioRep;
+			my @sortedTech = sort { $a->[0] <=> $b->[0] } @techRep;
+			
+		
+			#find gaps in Bio_Replicates and Fix them
+			my $numRep=0;
+			my $oldVal;
+			for my $rowBioIndex ( 0..$#sortedBio ){
+				my $val = $sortedBio[$rowBioIndex][0];
+				if ($oldVal != $val){
+					$oldVal = $val;
+					$numRep ++;
+				}
+				if ($val > $numRep){
+					#wrong enumeration, need to be fixed
+					my $regObj = $sortedBio[$rowBioIndex][1];
+					$regObj->set_new_bio_replicate($numRep);
+				}				
+				
+			}
+
+			#find gaps in Tech_Replicates and Fix them
+			$numRep=0;
+			$oldVal=-1;
+			for my $rowTechIndex ( 0..$#sortedTech ){
+				my $val = $sortedTech[$rowTechIndex][0];
+				if ($oldVal != $val){
+					$oldVal = $val;
+					$numRep ++;
+				}
+				if ($val > $numRep){
+					#wrong enumeration, need to be fixed
+					my $regObj = $sortedTech[$rowTechIndex][1];
+					$regObj->set_new_tech_replicate($numRep);
+				}
+			}
+		
+			#update multiple column based on the new replicate enumeration columns
+			my %hshMultiple;
+			my $valMultiple = 0;
+			foreach my $objSelected (@{$lstExperiment}){
+				my $nBioRep = $objSelected->get('new_bio_replicate');
+				my $nTechRep = $objSelected->get('new_tech_replicate');
+				my $nPairedEnd = $objSelected->get('paired_end_tag');
+				my $myKey = $nBioRep.'_'.$nTechRep.'_'.$nPairedEnd;
+				
+				if (exists $hshMultiple{$myKey}) {
+					$valMultiple = $hshMultiple{$myKey};
+					$valMultiple ++;
+					$hshMultiple{$myKey} = $valMultiple;
+				}else{
+					$hshMultiple{$myKey} = 1;
+					$valMultiple = 1;
+				}
+				$objSelected->set_multiple ($valMultiple);
+			}
+			
+		}
+	} 
+	
+	return;
+}
+
+sub get_experiments{
+	my $epigenome = shift;
+	my $feature = shift;
+	my $expAccession = shift;
+	my $lstObjs = shift;
+	my @lstRegMeta = @{$lstObjs};
+	my @lstSelected;
+	foreach my $regMeta (@lstRegMeta){
+		if ($regMeta->get('epigenome') eq $epigenome && $regMeta->get('feature_type') eq $feature && $regMeta->get('experiment_accession') eq $expAccession){
+			push @lstSelected, $regMeta;
+		}
+	}
+	return \@lstSelected;
+}
+
+
+
+
+=pod
+sub get_num_multiple{
+	my $experiment = shift;
+	my $bioRep = shift;
+	my $techRep = shift;
+	my $paired_end = shift;
+	my $multiple = shift;
+	my %lstMultiple = %{$multiple};
+	my $ret=0;
+	
+	my $myKey = $experiment.'_'.$bioRep.'_'.$techRep.'_'.$paired_end;
+	#print "$myKey\n";
+	print Dumper(%lstMultiple);
+	if (exists $lstMultiple{$myKey}) {
+		$ret = $lstMultiple{$myKey};
+		$ret ++;
+	}else{
+		$ret = 1;
+	}
+	$lstMultiple{$myKey} = $ret;
+	
+	return $ret, \%lstMultiple;
+}
+=cut
+
+
+sub get_control_info{
 	my $experiments = shift;
-	my $accession; 
 	my $info;
 	my $numExp = 0;
 	foreach my $exp (@{$experiments}){
-		if (uc $exp->{'target'}->{'label'} eq 'CONTROL'){
+		if ((uc $exp->{'target'}->{'label'} eq 'CONTROL') || (uc $exp->{'target'}->{'label'} eq 'RABBIT-IGG-CONTROL')){
 			$numExp ++;
 			$info .='Exp:'.$exp->{'accession'};
 			my @files = @{$exp->{'files'}};
 			foreach my $file (@files){
 				if (uc $file->{'file_format'} eq 'FASTQ'){
 					$info .=' File:'.$file->{'accession'}.'; ';
-					if ($accession ne ''){
-						$accession.=',';
-					}
-					$accession.= $file->{'accession'};
 				}
 			} 
 			
@@ -344,7 +510,7 @@ sub get_control_id{
 	if ($numExp < 2){
 		$info = '-';
 	}
-	return $accession, $info;
+	return $info;
 }
 
 sub get_reference_epigenome_data{
@@ -360,10 +526,13 @@ sub get_reference_epigenome_data{
 
 sub store_row{
 	my $accession= shift;
+	my $expAccession= shift;
 	my $epigenome = shift;
 	my $featureType = shift;
 	my $bioReplicate = shift;
+	my $newBioReplicate = shift;
 	my $techReplicate = shift;
+	my $newTechReplicate = shift;
 	my $gender = shift;
 	my $md5Check = shift;
 	my $localUrl = shift;
@@ -374,14 +543,21 @@ sub store_row{
 	my $xref = shift;
 	my $epiDesc = shift;
 	my $controlId = shift;
+	my $paired = shift;
+	my $paired_end_tag = shift;
+	my $read_length = shift;
+	my $multiple= shift;
 	my $downUrl = shift; 
 	my $info = shift;
 	my $clsRegMeta = clsRegisterMetadata->new();
 	$clsRegMeta->set_accession($accession);
+	$clsRegMeta->set_experiment_accession($expAccession);
 	$clsRegMeta->set_epigenome($epigenome);
 	$clsRegMeta->set_feature_type($featureType);
 	$clsRegMeta->set_biological_replicate($bioReplicate);
+	$clsRegMeta->set_new_bio_replicate($newBioReplicate);
 	$clsRegMeta->set_technical_replicate($techReplicate);
+	$clsRegMeta->set_new_tech_replicate($newTechReplicate);
 	$clsRegMeta->set_gender($gender);
 	$clsRegMeta->set_md5_checksum ($md5Check);
 	$clsRegMeta->set_local_url ($localUrl);
@@ -392,6 +568,10 @@ sub store_row{
 	$clsRegMeta->set_xrefs ($xref);
 	$clsRegMeta->set_epigenome_description ($epiDesc);
 	$clsRegMeta->set_control_id ($controlId);
+	$clsRegMeta->set_paired ($paired);
+	$clsRegMeta->set_paired_end_tag ($paired_end_tag);
+	$clsRegMeta->set_read_length ($read_length);
+	$clsRegMeta->set_multiple ($multiple);
 	$clsRegMeta->set_download_url ($downUrl);
 	$clsRegMeta->set_info ($info);
 	return $clsRegMeta;

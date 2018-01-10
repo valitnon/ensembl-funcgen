@@ -8,10 +8,13 @@ sub new {
 	my $self = {
 
 		accession  => $args->{accession} || '',
+		experiment_accession  => $args->{experiment_accession} || '',
 		epigenome  => $args->{epigenome} || '',
 		feature_type  => $args->{feature_type} || '',
 		biological_replicate  => $args->{biological_replicate} || '',
+		new_bio_replicate  => $args->{new_bio_replicate} || '',
 		technical_replicate  => $args->{technical_replicate} || '',
+		new_tech_replicate  => $args->{new_tech_replicate} || '',
 		gender  => $args->{gender} || '',
 		md5_checksum  => $args->{md5_checksum} || '',
 		local_url  => $args->{local_url} || '',
@@ -22,6 +25,10 @@ sub new {
 		xrefs  => $args->{xrefs} || '',
 		epigenome_description  => $args->{epigenome_description} || '',
 		control_id  => $args->{control_id} || '',
+		paired  => $args->{paired} || '',
+		paired_end_tag  => $args->{paired_end_tag} || '',
+		read_length  => $args->{read_length} || '',
+		multiple  => $args->{multiple} || '',
 		download_url  => $args->{download_url} || '',
 		info  => $args->{info} || ''
 	};
@@ -32,6 +39,11 @@ sub new {
 sub set_accession {
 	my ($self, $accession) = @_;
     $self->{accession} = $accession;	
+}
+
+sub set_experiment_accession {
+	my ($self, $expAccession) = @_;
+    $self->{experiment_accession} = $expAccession;	
 }
 
 sub set_epigenome {
@@ -49,9 +61,19 @@ sub set_biological_replicate {
     $self->{biological_replicate} = $biological_replicate;	
 }
 
+sub set_new_bio_replicate {
+	my ($self, $new_bio_replicate) = @_;
+    $self->{new_bio_replicate} = $new_bio_replicate;	
+}
+
 sub set_technical_replicate {
 	my ($self, $technical_replicate) = @_;
     $self->{technical_replicate} = $technical_replicate;	
+}
+
+sub set_new_tech_replicate {
+	my ($self, $new_tech_replicate) = @_;
+    $self->{new_tech_replicate} = $new_tech_replicate;	
 }
 
 sub set_gender {
@@ -104,6 +126,26 @@ sub set_control_id {
     $self->{control_id} = $control_id;	
 }
 
+sub set_paired {
+	my ($self, $paired) = @_;
+    $self->{paired} = $paired;	
+}
+
+sub set_paired_end_tag {
+	my ($self, $paired_end_tag) = @_;
+    $self->{paired_end_tag} = $paired_end_tag;	
+}
+
+sub set_read_length {
+	my ($self, $read_length) = @_;
+    $self->{read_length} = $read_length;	
+}
+
+sub set_multiple {
+	my ($self, $multiple) = @_;
+    $self->{multiple} = $multiple;	
+}
+
 sub set_download_url {
 	my ($self, $download_url) = @_;
     $self->{download_url} = $download_url;	
@@ -114,11 +156,16 @@ sub set_info {
     $self->{info} = $info;	
 }
 
+sub get {
+	my ($self, $field) = @_;
+    return $self->{$field};
+}
+
 sub csv_row {
 	my $self = shift;
-	my $csv_row = join ("\t", $self->{accession}, $self->{epigenome}, $self->{feature_type}, $self->{biological_replicate}, $self->{technical_replicate}, $self->{gender}, 
+	my $csv_row = join ("\t", $self->{accession}, $self->{experiment_accession}, $self->{epigenome}, $self->{feature_type}, $self->{biological_replicate}, $self->{new_bio_replicate}, $self->{technical_replicate}, $self->{new_tech_replicate}, $self->{gender}, 
 	$self->{md5_checksum}, $self->{local_url}, $self->{analysis}, $self->{experimental_group}, $self->{assay_xrefs}, $self->{ontology_xrefs}, $self->{xrefs}, $self->{epigenome_description}, 
-	$self->{control_id}, $self->{download_url}, $self->{info});
+	$self->{control_id}, $self->{paired}, $self->{paired_end_tag}, $self->{read_length}, $self->{multiple}, $self->{download_url}, $self->{info});
 	
 	return $csv_row;
 }	
