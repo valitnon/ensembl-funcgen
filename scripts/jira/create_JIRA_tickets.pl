@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
 
-# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-# Copyright [2016-2018] EMBL-European Bioinformatics Institute
+# Copyright [1999-2016] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -255,6 +254,8 @@ sub validate_user_name {
         'mnuhn'    => 'mnuhn',
         'michael'  => 'mnuhn',
         'Michael'  => 'mnuhn',
+		'Jose'     => 'jcmarca',
+		'jcmarca'  => 'jcmarca',
     );
 
     if ( exists $valid_user_names{$user} ) {
@@ -372,7 +373,8 @@ sub replace_placeholders {
     $line =~ s/<handover_date>/$parameters->{dates}->{handover}/g;
     $line =~ s/<codeBranching_date>/$parameters->{dates}->{codeBranching}/g;
     $line =~ s/<release_date>/$parameters->{dates}->{release}/g;
-
+	$line =~ s/<ftpDump_date>/$parameters->{dates}->{ftpDump}/g;
+		
     return $line;
 }
 

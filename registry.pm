@@ -7,7 +7,7 @@ Bio::EnsEMBL::DBSQL::DBAdaptor->new(
   -host    => 'mysql-ens-sta-1.ebi.ac.uk',
   -port    => 4519,
   -user    => 'ensro',
-  -dbname  => 'homo_sapiens_funcgen_91_38',
+  -dbname  => 'homo_sapiens_core_91_38',
 );
  
   
