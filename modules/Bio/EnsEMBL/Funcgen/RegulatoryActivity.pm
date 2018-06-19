@@ -109,8 +109,7 @@ sub get_RegulatoryFeature {
 
 sub set_RegulatoryFeature {
   my ($self, $obj) = @_;
-  my $self = shift;
-  my $obj  = shift;
+  
   $self->_generic_set('regulatoryfeature', 'Bio::EnsEMBL::RegulatoryFeature', $obj);
   use Scalar::Util qw( weaken );
   # Avoid circular reference and the memory leak that comes with it
