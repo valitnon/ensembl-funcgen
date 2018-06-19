@@ -309,9 +309,8 @@ sub regulatory_activity_for_epigenome {
   
   my $epigenome_id = $epigenome->dbID;
   my @regulatory_activity = grep { 
-    !$_->_is_multicell 
-    && $_->get_Epigenome->dbID == $epigenome_id 
-  } @{$self->regulatory_activity};
+    $_->get_Epigenome->dbID == $epigenome_id 
+} @{$self->regulatory_activity};
   
   if (! @regulatory_activity) {
     return;
