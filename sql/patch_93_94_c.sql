@@ -14,7 +14,7 @@
 -- limitations under the License.
 
 /**
-@header patch_92_93_n.sql - Modify binding_matrix_table
+@header patch_93_94_c.sql - Modify binding_matrix_table
 @desc Modifications related to the new motif pipeline
 */
 
@@ -30,4 +30,4 @@ ALTER TABLE `binding_matrix` ADD UNIQUE KEY `name_idx` (`name`);
 ALTER TABLE `binding_matrix` ADD UNIQUE KEY `stable_id_idx` (`stable_id`);
 
 -- patch identifier
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_n.sql|Modify binding_matrix_table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_c.sql|Modify binding_matrix_table');

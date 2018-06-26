@@ -14,18 +14,15 @@
 -- limitations under the License.
 
 /**
-@header patch_92_93_u.sql - Create motif_feature_peak table
-@desc Stores associations between motif_features and peaks
+@header patch_93_94_i.sql - Modify motif_feature table
+@desc Remove display_label, rename stable_id
 */
 
-DROP TABLE IF EXISTS `motif_feature_peak`;
-CREATE TABLE `motif_feature_peak` (
-  `motif_feature_peak_id` int(11) NOT NULL AUTO_INCREMENT,
-  `motif_feature_id` int(11) NOT NULL,
-  `peak_id` int(11) NOT NULL,
-  PRIMARY KEY (`motif_feature_peak_id`),
-  UNIQUE KEY `motif_feature_peak_idx` (`motif_feature_id`,`peak_id`)
-)ENGINE=MyISAM DEFAULT CHARSET=latin1;
+ALTER TABLE `motif_feature` DROP COLUMN `display_label`;
+ALTER TABLE `motif_feature` DROP COLUMN `interdb_stable_id`;
+ALTER TABLE `motif_feature` ADD COLUMN `stable_id` VARCHAR(18) DEFAULT NULL;
+ALTER TABLE `motif_feature` ADD UNIQUE KEY `unique_idx` (`binding_matrix_id`, `seq_region_id`, `seq_region_start`, `seq_region_strand`);
+ALTER TABLE `motif_feature` ADD UNIQUE KEY `stable_id_idx` (`stable_id`);
 
 -- patch identifier
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_u.sql|Create motif_feature_peak table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_i.sql|Modify motif_feature table');

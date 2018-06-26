@@ -14,7 +14,7 @@
 -- limitations under the License.
 
 /**
-@header patch_92_93_s.sql - Create binding_matrix_transcription_factor_complex table
+@header patch_93_94_h.sql - Create binding_matrix_transcription_factor_complex table
 @desc linking table between a binding_matrix and a transcription_factor_complex
 */
 
@@ -30,4 +30,4 @@ CREATE TABLE `binding_matrix_transcription_factor_complex` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- patch identifier
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_s.sql|Create binding_matrix_transcription_factor_complex table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_h.sql|Create binding_matrix_transcription_factor_complex table');

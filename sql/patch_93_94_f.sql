@@ -14,7 +14,7 @@
 -- limitations under the License.
 
 /**
-@header patch_92_93_q.sql - Create transcription_factor_complex table
+@header patch_93_94_f.sql - Create transcription_factor_complex table
 @desc Stores transcription factor complexes
 */
 
@@ -29,4 +29,4 @@ CREATE TABLE `transcription_factor_complex` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- patch identifier
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_q.sql|Create transcription_factor_complex table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_f.sql|Create transcription_factor_complex table');

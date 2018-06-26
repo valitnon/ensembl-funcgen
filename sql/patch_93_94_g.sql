@@ -14,7 +14,7 @@
 -- limitations under the License.
 
 /**
-@header patch_92_93_r.sql - Create transcription_factor_complex_composition table
+@header patch_93_94_g.sql - Create transcription_factor_complex_composition table
 @desc Groups transcription factors into complexes
 */
 
@@ -30,4 +30,4 @@ CREATE TABLE `transcription_factor_complex_composition` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- patch identifier
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_r.sql|Create transcription_factor_complex_composition table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_g.sql|Create transcription_factor_complex_composition table');

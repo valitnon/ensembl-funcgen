@@ -14,20 +14,21 @@
 -- limitations under the License.
 
 /**
-@header patch_92_93_p.sql - Create transcription_factor table
-@desc Stores transcription factors and links them with feature_type
+@header patch_93_94_d.sql - Create binding_matrix_frequencies table
+@desc Stores the frequency values of a binding matrix
 */
 
-DROP TABLE IF EXISTS `transcription_factor`;
-CREATE TABLE `transcription_factor` (
-	`transcription_factor_id` int(11) NOT NULL AUTO_INCREMENT,
-	`name` varchar(120) NOT NULL,
-	`feature_type_id` int(10) unsigned,
-	`gene_stable_id` varchar(128),
-	PRIMARY KEY (`transcription_factor_id`),
-	UNIQUE KEY `name_idx` (`name`),
-	KEY `feature_type_id_idx` (`feature_type_id`)
+DROP TABLE IF EXISTS `binding_matrix_frequencies`;
+CREATE TABLE `binding_matrix_frequencies` (
+  `binding_matrix_frequencies_id` int(11) NOT NULL AUTO_INCREMENT,
+  `binding_matrix_id` int(11) NOT NULL,
+  `position` int(11) unsigned NOT NULL,
+  `nucleotide` enum('A','C','G','T') NOT NULL,
+  `frequency` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`binding_matrix_frequencies_id`),
+  KEY `binding_matrix_id_idx` (`binding_matrix_id`),
+  UNIQUE KEY `unique_constraint_idx` (`binding_matrix_id`,`position`,`nucleotide`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- patch identifier
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_p.sql|Create transcription_factor table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_d.sql|Create binding_matrix_frequencies table');

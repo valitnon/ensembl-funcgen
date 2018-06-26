@@ -1565,17 +1565,18 @@ CREATE TABLE `meta` (
 
 -- Add necessary meta values
 INSERT INTO meta (meta_key, meta_value) VALUES ('schema_type', 'funcgen');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'schema_version', '93');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'schema_version', '94');
 
 -- Update and remove these for each release to avoid erroneous patching
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_n.sql|Modify binding_matrix_table');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_o.sql|Create binding_matrix_frequencies table');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_p.sql|Create transcription_factor table');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_q.sql|Create transcription_factor_complex table');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_r.sql|Create transcription_factor_complex_composition table');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_s.sql|Create binding_matrix_transcription_factor_complex table');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_t.sql|Modify motif_feature table');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_u.sql|Create motif_feature_peak table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_c.sql|Modify binding_matrix_table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_d.sql|Create binding_matrix_frequencies table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_e.sql|Create transcription_factor table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_f.sql|Create transcription_factor_complex table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_g.sql|Create transcription_factor_complex_composition table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_h.sql|Create binding_matrix_transcription_factor_complex table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_i.sql|Modify motif_feature table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_j.sql|Create motif_feature_peak table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_k.sql|Create motif_feature_regulatory_feature table');
 
 /**
 @table meta_coord

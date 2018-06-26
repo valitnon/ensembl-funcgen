@@ -14,14 +14,20 @@
 -- limitations under the License.
 
 /**
-@header patch_92_93_t.sql - Modify motif_feature table
-@desc Remove display_label, rename stable_id
+@header patch_93_94_e.sql - Create transcription_factor table
+@desc Stores transcription factors and links them with feature_type
 */
 
-ALTER TABLE `motif_feature` DROP COLUMN `display_label`;
-ALTER TABLE `motif_feature` DROP COLUMN `interdb_stable_id`;
-ALTER TABLE `motif_feature` ADD COLUMN `stable_id` VARCHAR(18) DEFAULT NULL;
-ALTER TABLE `motif_feature` ADD UNIQUE KEY `unique_idx` (`binding_matrix_id`, `seq_region_id`, `seq_region_start`, `seq_region_strand`);
+DROP TABLE IF EXISTS `transcription_factor`;
+CREATE TABLE `transcription_factor` (
+	`transcription_factor_id` int(11) NOT NULL AUTO_INCREMENT,
+	`name` varchar(120) NOT NULL,
+	`feature_type_id` int(10) unsigned,
+	`gene_stable_id` varchar(128),
+	PRIMARY KEY (`transcription_factor_id`),
+	UNIQUE KEY `name_idx` (`name`),
+	KEY `feature_type_id_idx` (`feature_type_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- patch identifier
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_92_93_t.sql|Modify motif_feature table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_e.sql|Create transcription_factor table');
