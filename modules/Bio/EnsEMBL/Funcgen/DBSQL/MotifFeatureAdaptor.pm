@@ -252,6 +252,50 @@ sub fetch_all_by_Slice_FeatureSets {
   return $mfs;
 }
 
+=head2 _fetch_overlapping_Peak
+
+  Arg [1]    : Bio::EnsEMBL::Funcgen::MotifFeature
+  Example    : None
+  Description: Fetches the overlapping Peak for a particular MotifFeature
+  Returntype : Bio::EnsEMBL::Funcgen::Peak object
+  Exceptions : None
+  Caller     : Internal
+  Status     : At Risk
+
+=cut
+
+sub _fetch_overlapping_Peak {
+    my ( $self, $motif_feature ) = @_;
+
+    if (! defined $motif_feature){
+      throw('Must provide a MotifFeature parameter');
+    }
+
+    my $sth = $self->prepare( "
+      SELECT peak_id FROM motif_feature_peak
+      WHERE motif_feature_id=?
+      " );
+
+    $sth->execute( $motif_feature->dbID() );
+
+    my @peak_ids;
+
+    while ( my @row = $sth->fetchrow_array ) {
+        push @peak_ids, $row[0];
+    }
+
+    my $peak_adaptor
+        = $self->db->get_adaptor('Peak');
+
+    my @peaks;
+
+    for my $id (@peak_ids) {
+        push @peaks, $peak_adaptor->fetch_by_dbID($id);
+    }
+
+    return $peaks[0];
+}
+
 
 =head2 _final_clause
 
