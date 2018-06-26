@@ -543,18 +543,19 @@ sub store_associated_Peak {
 
     $self->db->is_stored_and_valid( 'Bio::EnsEMBL::Funcgen::Peak', $peak );
 
+    # Replace provided motif feature with the one which is stored in the db
     my $existing_motif_feature
         = $self->fetch_by_BindingMatrix_Slice_start_strand(
         $mf->binding_matrix(), $mf->slice(), $mf->start(), $mf->strand() );
+    
+    $self->db->is_stored_and_valid( 'Bio::EnsEMBL::Funcgen::MotifFeature', $existing_motif_feature );
     $mf = $existing_motif_feature;
 
-    #Check for existing association
-    foreach my $existing_peak ( @{ $mf->associated_Peaks } ) {
-
-        if ( $existing_peak->dbID == $peak->dbID ) {
-            warn "You are trying to store a pre-existing Peak association";
-            return;
-        }
+    # Check for existing association
+    my $existing_peak = $mf->fetch_overlapping_Peak;
+    if ( $existing_peak and $existing_peak->dbID == $peak->dbID ) {
+      warn "You are trying to store a pre-existing Peak association";
+      return;
     }
 
     # Validate MotifFeature is entirely contained within the Peak
@@ -576,7 +577,7 @@ sub store_associated_Peak {
     $sth->bind_param( 2, $peak->dbID, SQL_INTEGER );
     $sth->execute();
 
-    # push @{ $mf->{associated_Peaks} }, $peak;
+    # $mf->{associated_Peak} = $peak;
 
     return $mf;
 }
