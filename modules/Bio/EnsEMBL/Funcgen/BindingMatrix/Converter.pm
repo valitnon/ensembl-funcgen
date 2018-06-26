@@ -58,8 +58,8 @@ use Bio::EnsEMBL::Utils::Scalar qw( assert_ref check_ref );
 use Bio::EnsEMBL::Utils::Exception qw( throw );
 use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
 
-use Bio::EnsEMBL::Funcgen::BindingMatrix;
 use Bio::EnsEMBL::Funcgen::BindingMatrix::Constants qw ( :all );
+require Bio::EnsEMBL::Funcgen::BindingMatrix;
 
 =head2 new
 
@@ -324,7 +324,7 @@ sub from_probabilities_to_bits {
 
 sub from_frequencies_to_bits {
     my ( $self, $binding_matrix, $pseudocount ) = @_;
-
+    
     my $probabilities_binding_matrix
         = $self->from_frequencies_to_probabilities($binding_matrix, $pseudocount);
 

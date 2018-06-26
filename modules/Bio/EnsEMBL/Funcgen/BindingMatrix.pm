@@ -56,6 +56,7 @@ use Bio::EnsEMBL::Utils::Exception qw( throw );
 use Bio::EnsEMBL::Funcgen::Sequencing::MotifTools qw( parse_matrix_line
                                                       reverse_complement_matrix );
 use Bio::EnsEMBL::Funcgen::BindingMatrix::Constants qw ( :all );
+require Bio::EnsEMBL::Funcgen::BindingMatrix::Converter;
 
 use base qw( Bio::EnsEMBL::Funcgen::Storable );
 
