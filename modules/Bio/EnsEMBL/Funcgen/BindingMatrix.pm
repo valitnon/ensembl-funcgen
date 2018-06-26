@@ -439,6 +439,58 @@ sub relative_sequence_similarity_score {
 }
 
 =head2 is_position_informative
+  Arg [1]    : Integer - position within the matrix
+  Arg [2]    : (Optional) Float - Threshold [0-2] for information content [default is 1.5]
+  Example    : $binding_matrix->is_position_informative($position);
+  Description: Returns true if position information content is over threshold
+  Returntype : Boolean
+  Exceptions : Throws if position or threshold is out of bounds
+  Caller     : General
+  Status     : At Risk
+=cut
+
+sub is_position_informative {
+    my ( $self, $position, $threshold ) = @_;
+    my $is_position_informative = 0;
+
+    if (! $position){
+        throw('Position parameter not provided!');
+    }
+
+    if ( $position < 1 || $position > $self->length ) {
+        throw(  'Position parameter should be between 1 and '
+              . $self->length
+              . '. You provided: '
+              . $position );
+    }
+
+    my $default_threshold = 1.5;
+    if (! defined $threshold){
+        $threshold = $default_threshold;
+    }
+    elsif ( $threshold < 0 || $threshold > 2 ) {
+        throw(  'Threshold parameter should be between 0 and 2. '
+              . 'You provided: '
+              . $threshold );
+    }
+
+    my $converter = Bio::EnsEMBL::Funcgen::BindingMatrix::Converter->new();
+    my $bits_binding_matrix =
+      $converter->from_frequencies_to_bits( $self );
+    
+    my $position_bit_score = 0;
+    for my $bit_score (values %{$bits_binding_matrix->{elements}->{$position}}){
+        $position_bit_score += $bit_score;
+    }
+
+    if ($position_bit_score > $threshold){
+        $is_position_informative = 1;
+    }
+    
+    return $is_position_informative;
+
+}
+
 
 =head2 summary_as_hash
 
