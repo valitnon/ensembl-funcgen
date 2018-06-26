@@ -76,7 +76,7 @@ use base qw(Bio::EnsEMBL::Feature Bio::EnsEMBL::Funcgen::Storable);
 
 =head2 new
 
- 
+
   Arg [-SCORE]          : (optional) int - Score given by the motif mapper.
   Arg [-SLICE]          : Bio::EnsEMBL::Slice - The slice on which this feature is.
   Arg [-BINDING_MATRIX] : Bio::EnsEMBL::Funcgen::BindingMatrix - Binding Matrix associated to this feature.
@@ -110,11 +110,14 @@ sub new {
   my $caller = shift;
   my $class  = ref($caller) || $caller;
   my $self   = $class->SUPER::new(@_);
-  
-  ($self->{score}, $self->{binding_matrix}, $self->{stable_id}) 
+
+  ($self->{score}, $self->{binding_matrix}, $self->{stable_id})
     = rearrange(['SCORE', 'BINDING_MATRIX', 'STABLE_ID'], @_);
 
   assert_ref($self->{binding_matrix}, 'Bio::EnsEMBL::Funcgen::BindingMatrix');
+
+  $self->{overlapping_Peak} = undef;
+  $self->{overlapping_RegulatoryFeature} = undef;
 
   return $self;
 }
@@ -124,7 +127,7 @@ sub new {
 
   Args       : Hashref with all internal attributes set
   Example    : none
-  Description: Quick and dirty version of new. Only works if the calling code 
+  Description: Quick and dirty version of new. Only works if the calling code
                is very disciplined.
   Returntype : Bio::EnsEMBL::Funcgen::MotifFeature
   Exceptions : None
@@ -148,20 +151,6 @@ sub new_fast { return bless ($_[1], $_[0]); }
 =cut
 
 sub binding_matrix{ return shift->{binding_matrix}; }
-
-=head2 feature_type
-
-  Example    : my $TF_name = $motif_feature->feature_type->name;
-  Description: Convenience method for accessing feature type of binding matrix
-  Returntype : Bio::EnsEMBL::Funcgen::FeatureType
-  Exceptions : None
-  Caller     : General
-  Status     : At risk
-
-=cut
-
-sub feature_type{ return shift->{binding_matrix}->feature_type; }
-
 
 =head2 score
 
@@ -230,7 +219,7 @@ sub is_position_informative {
                }
 
   Description: Calculates the potential influence of a given variation in a motif feature.
-               Returns a value between -100% (lost) and +100% (gain) indicating the difference 
+               Returns a value between -100% (lost) and +100% (gain) indicating the difference
                in strength between the motif in the reference and after the variation.
 
   Returntype : Scalar (numeric) or undef
@@ -250,8 +239,8 @@ sub infer_variation_consequence{
   my $sr_start    = $self->seq_region_start;
   my $allele      = $vf->allele_string(undef, $self->seq_region_strand);
 
-  if($allele !~ /^[ACTG]\/[ACTG]$/){ 
-    throw("Unsupported variation allele:\t".$allele."\nCurrently only SNPs supported"); 
+  if($allele !~ /^[ACTG]\/[ACTG]$/){
+    throw("Unsupported variation allele:\t".$allele."\nCurrently only SNPs supported");
   }
 
   # From now on, assumes variation is a SNP
@@ -272,20 +261,20 @@ sub infer_variation_consequence{
   my $var_seq = substr($ref_seq, 0, $vf_idx).$allele.
     substr($ref_seq, $vf_idx + 1);  # + length($variant));
 
-  # relative affinity only works with strand matched seq 
-  # in 5'->3' orientation. We already have the strand seq 
+  # relative affinity only works with strand matched seq
+  # in 5'->3' orientation. We already have the strand seq
   # so just need to reverse if -1
 
   if($self->seq_region_strand == -1){
     $var_seq = reverse($var_seq);#tr/ACGT/TGCA/;
     $ref_seq = reverse($ref_seq);
-  }  
+  }
 
   my $bm     = $self->binding_matrix;
   my $var_ra = $bm->relative_affinity($var_seq, $linear);
   my $ref_ra = $bm->relative_affinity($ref_seq, $linear);
 
-  return (defined $var_ra && defined $ref_ra ) ? (100 * ($var_ra - $ref_ra)) : undef; 
+  return (defined $var_ra && defined $ref_ra ) ? (100 * ($var_ra - $ref_ra)) : undef;
 }
 
 
@@ -322,14 +311,6 @@ sub summary_as_hash {
   my $self = shift;
   my ($acc, $ftype);
   #split display_label as binding matrix may be lazy loaded and slow things down
-  
-  if ($self->display_label =~ /(.*[^:])(:)(.*)/o){ 
-    $ftype = $1;
-    $acc = $3;
-  }
-  else{
-    warn "Failed to parse feature type and binding matric from display_id:\t".$self->display_id;
-  }
 
   #Add bm.threshold in here?
   return
@@ -342,6 +323,4 @@ sub summary_as_hash {
     score                   => $self->score            };
 }
 
-
 1;
-

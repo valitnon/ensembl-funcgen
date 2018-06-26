@@ -475,10 +475,10 @@ sub store{
       next FEATURE;
     }
 
-    if ( $mf->is_stored($db) ) {
-  		warning('MotifFeature [' . $mf->dbID() . '] is already stored in the database');
-  		next FEATURE;
-	  }
+    # if ( $mf->is_stored($db) ) {
+  	# 	warning('MotifFeature [' . $mf->dbID() . '] is already stored in the database');
+  	# 	next FEATURE;
+	  # }
 
 	  $self->db->is_stored_and_valid('Bio::EnsEMBL::Funcgen::BindingMatrix', $mf->binding_matrix());
 
@@ -498,9 +498,6 @@ sub store{
 
 	  $mf->dbID( $self->last_insert_id );
 	  $mf->adaptor($self);
-
-	  #Don't store assoicated AF/TFF here
-	  #do this explicitly in the caller via store_associated_AnnotatedFeature
 	}
 
   return \@motif_features;
@@ -511,7 +508,7 @@ sub store{
 
   Args[1]    : Bio::EnsEMBL::Funcgen::MotifFeature
   Args[2]    : Bio::EnsEMBL::Funcgen::Peak
-  Example    : $esa->store_AnnotatedFeature_association($mf, $af);
+  Example    : $mfa->store_associated_Peak($mf, $peak);
   Description: Store link between TF peaks and MotifFeatures
   Returntype : Bio::EnsEMBL::Funcgen::MotifFeature
   Exceptions : Throws if args are not valid, warns if association already exists
@@ -662,8 +659,5 @@ sub fetch_by_stable_id {
 
   return $self->generic_fetch('mf.stable_id=?')->[0];
 }
-
-
-
 
 1;
