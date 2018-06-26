@@ -413,6 +413,33 @@ sub sequence_similarity_score {
     return $sequence_similarity_score;
 }
 
+=head2 relative_sequence_similarity_score
+
+  Example       : $relative_seq_sim_score = 
+                    $binding_matrix->relative_sequence_similarity_score($seq);
+  Description   : Calculates the similarity score of a given sequence relative to the
+                  optimal site for the matrix.
+  Returns       : Integer, between 0 and 1
+  Status        : At risk
+
+=cut
+
+sub relative_sequence_similarity_score {
+    my ( $self, $sequence ) = @_;
+
+    my ( $min_sequence_similarity_score, $max_sequence_similarity_score ) =
+      $self->_min_max_sequence_similarity_score();
+
+    my $relative_sequence_similarity_score =
+      ( $self->sequence_similarity_score($sequence) -
+          $min_sequence_similarity_score ) /
+      ( $max_sequence_similarity_score - $min_sequence_similarity_score );
+   
+   return $relative_sequence_similarity_score;
+}
+
+=head2 is_position_informative
+
 =head2 summary_as_hash
 
   Example       : $binding_matrix_summary = $binding_matrix->summary_as_hash;
