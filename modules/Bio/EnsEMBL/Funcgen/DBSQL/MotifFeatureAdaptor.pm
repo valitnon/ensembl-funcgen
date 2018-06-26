@@ -540,11 +540,64 @@ sub store_associated_Peak {
     return $mf;
 }
 
+=head2 store_associated_RegulatoryFeature
 
+  Args[1]    : Bio::EnsEMBL::Funcgen::MotifFeature
+  Args[2]    : Bio::EnsEMBL::Funcgen::RegulatoryFeature
+  Example    : $mfa->store_associated_RegulatoryFeature($mf, $regulatory_feature);
+  Description: Store link between RegulatoryFeatures and MotifFeatures
+  Returntype : Bio::EnsEMBL::Funcgen::MotifFeature
+  Exceptions : Throws if args are not valid, warns if association already exists
+  Caller     : General
+  Status     : Stable
 
+=cut
 
+sub store_associated_RegulatoryFeature {
+	my ( $self, $mf, $regulatory_feature, $epigenome, $has_matching_Peak ) = @_;
 
+	$self->db->is_stored_and_valid( 'Bio::EnsEMBL::Funcgen::RegulatoryFeature', $regulatory_feature );
+	
+  my $epigenome_id = undef;
+  if ($epigenome){
+    $self->db->is_stored_and_valid( 'Bio::EnsEMBL::Funcgen::Epigenome', $epigenome );
+    $epigenome_id = $epigenome->dbID();
+  }
 
+	# Replace provided motif feature with the one which is stored in the db
+	my $existing_motif_feature= 
+    $self->fetch_by_BindingMatrix_Slice_start_strand
+    ($mf->binding_matrix(), $mf->slice(), $mf->start(), $mf->strand() );
+
+	$self->db->is_stored_and_valid( 'Bio::EnsEMBL::Funcgen::MotifFeature', $existing_motif_feature );
+	$mf = $existing_motif_feature;
+
+    # Validate MotifFeature is entirely contained within the Peak
+    if (
+        !(
+               ( $regulatory_feature->seq_region_start <= $mf->seq_region_start )
+            && ( $mf->seq_region_end <= $regulatory_feature->seq_region_end )
+        )
+      )
+    {
+        throw('MotifFeature is not entirely contained within associated RegulatoryFeature');
+    }
+
+    my $sth = $self->prepare(
+"INSERT INTO motif_feature_regulatory_feature 
+(motif_feature_id, regulatory_feature_id, epigenome_id, has_matching_Peak) VALUES (?, ?, ?, ?)"
+    );
+
+    $sth->bind_param( 1, $mf->dbID,   SQL_INTEGER );
+    $sth->bind_param( 2, $regulatory_feature->dbID, SQL_INTEGER );
+    $sth->bind_param( 3, $epigenome_id, SQL_INTEGER );
+    $sth->bind_param( 4, $has_matching_Peak, SQL_TINYINT );
+    $sth->execute();
+
+    # push @{ $mf->{associated_Peaks} }, $peak;
+
+    return $mf;
+}
 
 =head2 fetch_by_stable_id
 
