@@ -49,6 +49,7 @@ package Bio::EnsEMBL::Funcgen::BindingMatrix;
 use strict;
 use warnings;
 
+use List::Util qw(min max);
 use Bio::EnsEMBL::Utils::Scalar    qw( assert_ref check_ref assert_integer);
 use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw( throw );
@@ -341,6 +342,75 @@ sub get_all_associated_TranscriptionFactorComplexes {
     }
 
     return $self->{associated_transcription_factor_complexes};
+}
+
+sub _min_max_sequence_similarity_score {
+    my ($self) = @_;
+    if (! $self->{min_sequence_similarity_score}){
+        my $converter = Bio::EnsEMBL::Funcgen::BindingMatrix::Converter->new();
+        my $weights_binding_matrix =
+          $converter->from_frequencies_to_weights( $self );
+
+        
+        my @elements_by_position;
+
+        for (my $position = 1; $position<= $weights_binding_matrix->length(); $position++){
+            @elements_by_position = values %{$weights_binding_matrix->_elements()->{$position}};
+            $self->{min_sequence_similarity_score} += min @elements_by_position;
+            $self->{max_sequence_similarity_score} += max @elements_by_position;
+        }
+    }
+
+    return ($self->{min_sequence_similarity_score}, $self->{max_sequence_similarity_score});
+}
+
+=head2 sequence_similarity_score
+
+  Example       : $seq_sim_score = $binding_matrix->sequence_similarity_score($seq);
+  Description   : Calculates the similarity score of a given sequence
+  Returns       : Float
+  Status        : At risk
+
+=cut
+
+sub sequence_similarity_score {
+    my ( $self, $sequence ) = @_;
+    my $sequence_similarity_score = 0;
+
+    if ( !$sequence ) {
+        throw('Sequence parameter not provided');
+    }
+
+    $sequence = uc($sequence);
+    $sequence =~ s/\s+//g;
+
+    if ( $sequence =~ /[^ACGT]/ ) {
+        throw( 'Sequence ' . $sequence . ' contains invalid characters' );
+    }
+
+    if ( CORE::length($sequence) != $self->length() ) {
+        throw(  'Specified sequence does not match matrix length!' . "\n"
+              . 'Binding Matrix length: '
+              . $self->length() . "\n"
+              . 'Specified sequence length: '
+              . CORE::length($sequence) );
+    }
+
+    my $converter = Bio::EnsEMBL::Funcgen::BindingMatrix::Converter->new();
+    my $weights_binding_matrix = $converter->from_frequencies_to_weights($self);
+
+
+    my @bases = split //, $sequence;
+    my $position = 1;
+
+    for my $base (@bases) {
+        $sequence_similarity_score +=
+          $weights_binding_matrix->get_element_by_position_nucleotide(
+            $position, $base );
+        $position++;
+    }
+
+    return $sequence_similarity_score;
 }
 
 =head2 summary_as_hash
