@@ -356,6 +356,7 @@ CREATE TABLE `motif_feature` (
   `stable_id` varchar(18) DEFAULT NULL,
   PRIMARY KEY (`motif_feature_id`),
   UNIQUE KEY `unique_idx` (`binding_matrix_id`, `seq_region_id`, `seq_region_start`, `seq_region_strand`),
+  UNIQUE KEY `stable_id_idx` (`stable_id`),
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
   KEY `binding_matrix_idx` (`binding_matrix_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
@@ -379,7 +380,31 @@ CREATE TABLE `motif_feature_peak` (
   `motif_feature_id` int(11) NOT NULL,
   `peak_id` int(11) NOT NULL,
   PRIMARY KEY (`motif_feature_peak_id`),
-  UNIQUE KEY `motif_feature_peak_idx` (`motif_feature_id`,`peak_id`)
+  UNIQUE KEY `motif_feature_idx` (`motif_feature_id`)
+)ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+/**
+@table  motif_feature_regulatory_feature
+@desc   Stores associations between MotifFeatures and RegulatoryFeatures
+@colour  #FFCC66
+
+@column motif_feature_regulatory_feature_id    Primary key, internal ID
+@column motif_feature_id    @link motif_feature table
+@column regulatory_feature_id   @link regulatory_feature table
+
+@see motif_feature
+@see regualatory_feature
+*/
+
+DROP TABLE IF EXISTS `motif_feature_regulatory_feature`;
+CREATE TABLE `motif_feature_regulatory_feature` (
+  `motif_feature_regulatory_feature_id` int(11) NOT NULL AUTO_INCREMENT,
+  `motif_feature_id` int(11) NOT NULL,
+  `regulatory_feature_id` int(11) NOT NULL,
+  `epigenome_id` int(11),
+  `has_matching_Peak` tinyint(3) unsigned DEFAULT '0',
+  PRIMARY KEY (`motif_feature_regulatory_feature_id`),
+  UNIQUE KEY `mf_rf_ep_idx` (`motif_feature_id`,`regulatory_feature_id`, `epigenome_id`)
 )ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 /**
