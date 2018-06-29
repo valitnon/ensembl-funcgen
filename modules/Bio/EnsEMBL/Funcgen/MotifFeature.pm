@@ -37,7 +37,7 @@ my $feature = Bio::EnsEMBL::Funcgen::MotifFeature->new
   -DISPLAY_LABEL => $text,
   -SCORE         => $score,
   -FEATURE_TYPE  => $ftype,
-  -INTERDB_STABLE_ID    => 1,
+  -STABLE_ID     => 1,
  );
 
 =head1 DESCRIPTION
@@ -69,7 +69,7 @@ use warnings;
 
 use Bio::EnsEMBL::Utils::Scalar    qw( assert_ref );
 use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
-use Bio::EnsEMBL::Utils::Exception qw( throw deprecate );
+use Bio::EnsEMBL::Utils::Exception qw( throw );
 
 use base qw(Bio::EnsEMBL::Feature Bio::EnsEMBL::Funcgen::Storable);
 
@@ -95,9 +95,8 @@ use base qw(Bio::EnsEMBL::Feature Bio::EnsEMBL::Funcgen::Storable);
                                 									  -END            => 1_000_024,
 								                                	  -STRAND         => -1,
                                 									  -BINDING_MATRIX => $bm,
-								                                	  -DISPLAY_LABEL  => $text,
                                   									-SCORE          => $score,
-                                                    -INTERDB_STABLE_ID     => 1 );
+                                                    -STABLE_ID     => 1 );
 
   Description: Constructor for MotifFeature objects.
   Returntype : Bio::EnsEMBL::Funcgen::MotifFeature
@@ -279,56 +278,17 @@ sub infer_variation_consequence{
 }
 
 
-=head2 interdb_stable_id
+=head2 stable_id
 
-  Arg [1]    : (optional) int - stable_id e.g 1
-  Example    : my $idb_sid = $feature->interdb_stable_id();
-  Description: Getter for the interdb_stable_id attribute for this feature.
-               This is simply to avoid using internal db IDs for inter DB linking
-  Returntype : int
+  Example    : my $istable_id = $feature->stable_id();
+  Description: Getter for the stable_id attribute for this feature.
+  Returntype : String
   Exceptions : None
   Caller     : General
-  Status     : Deprecated
+  Status     : At Risk
 
 =cut
 
-sub interdb_stable_id {
-    deprecate(
-        "Bio::EnsEMBL::Funcgen::MotifFeature::interdb_stable_id() has been
-        deprecated and will be removed in Ensembl release 94."
-    );
-    return shift->{interdb_stable_id};
-}
-
-
-sub SO_term {
-  my $self = shift;
-  return $self->feature_type->so_accession;
-}
-
-=head2 summary_as_hash
-
-  Example       : $motif_feature_summary = $motif_feature->summary_as_hash;
-  Description   : Retrieves a textual summary of this MotifFeature.
-  Returns       : Hashref of descriptive strings
-  Status        : Intended for internal use (REST)
-
-=cut
-
-sub summary_as_hash {
-  my $self = shift;
-  my ($acc, $ftype);
-  #split display_label as binding matrix may be lazy loaded and slow things down
-
-  #Add bm.threshold in here?
-  return
-   {binding_matrix          => $acc,
-    motif_feature_type      => $ftype,
-    start                   => $self->seq_region_start,
-    end                     => $self->seq_region_end,
-    strand                  => $self->strand,
-    seq_region_name         => $self->seq_region_name,
-    score                   => $self->score            };
-}
+sub stable_id { return shift->{stable_id}; }
 
 1;
