@@ -14,11 +14,20 @@
 -- limitations under the License.
 
 /**
-@header patch_93_94_b.sql - Modify column display_label length from epigenome table
-@desc   Modify column display_label length from epigenome table
+@header patch_93_94_e.sql - Create transcription_factor table
+@desc Stores transcription factors and links them with feature_type
 */
 
-ALTER TABLE epigenome MODIFY display_label VARCHAR(120) NOT NULL;
+DROP TABLE IF EXISTS `transcription_factor`;
+CREATE TABLE `transcription_factor` (
+	`transcription_factor_id` int(11) NOT NULL AUTO_INCREMENT,
+	`name` varchar(120) NOT NULL,
+	`feature_type_id` int(10) unsigned,
+	`gene_stable_id` varchar(128),
+	PRIMARY KEY (`transcription_factor_id`),
+	UNIQUE KEY `name_idx` (`name`),
+	KEY `feature_type_id_idx` (`feature_type_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- patch identifier
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_b.sql|Modify column display_label length from epigenome table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_e.sql|Create transcription_factor table');

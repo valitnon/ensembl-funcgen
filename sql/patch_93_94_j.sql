@@ -14,11 +14,18 @@
 -- limitations under the License.
 
 /**
-@header patch_93_94_b.sql - Modify column display_label length from epigenome table
-@desc   Modify column display_label length from epigenome table
+@header patch_93_94_j.sql - Create motif_feature_peak table
+@desc Stores associations between motif_features and peaks
 */
 
-ALTER TABLE epigenome MODIFY display_label VARCHAR(120) NOT NULL;
+DROP TABLE IF EXISTS `motif_feature_peak`;
+CREATE TABLE `motif_feature_peak` (
+  `motif_feature_peak_id` int(11) NOT NULL AUTO_INCREMENT,
+  `motif_feature_id` int(11) NOT NULL,
+  `peak_id` int(11) NOT NULL,
+  PRIMARY KEY (`motif_feature_peak_id`),
+  UNIQUE KEY `motif_feature_idx` (`motif_feature_id`)
+)ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- patch identifier
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_b.sql|Modify column display_label length from epigenome table');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_93_94_j.sql|Create motif_feature_peak table');

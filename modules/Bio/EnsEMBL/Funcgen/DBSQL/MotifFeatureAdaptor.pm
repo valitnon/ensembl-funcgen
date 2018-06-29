@@ -219,6 +219,50 @@ sub fetch_all_by_Slice_FeatureSets {
   return $mfs;
 }
 
+=head2 _fetch_overlapping_Peak
+
+  Arg [1]    : Bio::EnsEMBL::Funcgen::MotifFeature
+  Example    : None
+  Description: Fetches the overlapping Peak for a particular MotifFeature
+  Returntype : Bio::EnsEMBL::Funcgen::Peak object
+  Exceptions : None
+  Caller     : Internal
+  Status     : At Risk
+
+=cut
+
+sub _fetch_overlapping_Peak {
+    my ( $self, $motif_feature ) = @_;
+
+    if (! defined $motif_feature){
+      throw('Must provide a MotifFeature parameter');
+    }
+
+    my $sth = $self->prepare( "
+      SELECT peak_id FROM motif_feature_peak
+      WHERE motif_feature_id=?
+      " );
+
+    $sth->execute( $motif_feature->dbID() );
+
+    my @peak_ids;
+
+    while ( my @row = $sth->fetchrow_array ) {
+        push @peak_ids, $row[0];
+    }
+
+    my $peak_adaptor
+        = $self->db->get_adaptor('Peak');
+
+    my @peaks;
+
+    for my $id (@peak_ids) {
+        push @peaks, $peak_adaptor->fetch_by_dbID($id);
+    }
+
+    return $peaks[0];
+}
+
 
 =head2 _final_clause
 
@@ -461,16 +505,10 @@ sub store{
 		throw('Feature must be an MotifFeature object');
 	  }
 
-
-
-	  #Check for preexiting MF should be done in caller
-	  #as there is currently no unique key to restrict duplicates
-
-
-	  if ( $mf->is_stored($db) ) {
-		warning('MotifFeature [' . $mf->dbID() . '] is already stored in the database');
-		next FEATURE;
-	  }
+    # if ( $mf->is_stored($db) ) {
+  	# 	warning('MotifFeature [' . $mf->dbID() . '] is already stored in the database');
+  	# 	next FEATURE;
+	  # }
 
 	  $self->db->is_stored_and_valid('Bio::EnsEMBL::Funcgen::BindingMatrix', $mf->binding_matrix);
 
@@ -498,9 +536,6 @@ sub store{
 
 	  $mf->dbID( $self->last_insert_id );
 	  $mf->adaptor($self);
-
-	  #Don't store assoicated AF/TFF here
-	  #do this explicitly in the caller via store_associated_AnnotatedFeature
 	}
 
   return \@mfs;
@@ -510,10 +545,9 @@ sub store{
 =head2 store_associated_AnnotatedFeature
 
   Args[1]    : Bio::EnsEMBL::Funcgen::MotifFeature
-  Args[2]    : Bio::EnsEMBL::Funcgen::AnnotatedFeature
-  Example    : $esa->store_AnnotatedFeature_association($mf, $af);
-  Description: Store link between AnnotatedFeatures representing TF peaks
-               and MotifFeatures
+  Args[2]    : Bio::EnsEMBL::Funcgen::Peak
+  Example    : $mfa->store_associated_Peak($mf, $peak);
+  Description: Store link between TF peaks and MotifFeatures
   Returntype : Bio::EnsEMBL::Funcgen::MotifFeature
   Exceptions : Throws if args are not valid, warns if association already exists
   Caller     : General
@@ -548,45 +582,103 @@ sub store_associated_AnnotatedFeature{
   $self->db->is_stored_and_valid('Bio::EnsEMBL::Funcgen::MotifFeature', $mf);
   $self->db->is_stored_and_valid('Bio::EnsEMBL::Funcgen::AnnotatedFeature', $af);
 
+    # Replace provided motif feature with the one which is stored in the db
+    my $existing_motif_feature
+        = $self->fetch_by_BindingMatrix_Slice_start_strand(
+        $mf->binding_matrix(), $mf->slice(), $mf->start(), $mf->strand() );
+    
+    $self->db->is_stored_and_valid( 'Bio::EnsEMBL::Funcgen::MotifFeature', $existing_motif_feature );
+    $mf = $existing_motif_feature;
 
-  #Check for existing association
+    # Check for existing association
+    my $existing_peak = $mf->fetch_overlapping_Peak;
+    if ( $existing_peak and $existing_peak->dbID == $peak->dbID ) {
+      warn "You are trying to store a pre-existing Peak association";
+      return;
+    }
 
-  foreach my $existing_af(@{$mf->associated_annotated_features}){
+    # Validate MotifFeature is entirely contained within the Peak
+    if (
+        !(
+               ( $peak->seq_region_start <= $mf->seq_region_start )
+            && ( $mf->seq_region_end <= $peak->seq_region_end )
+        )
+      )
+    {
+        throw('MotifFeature is not entirely contained within associated Peak');
+    }
 
-	if( $existing_af->dbID == $af->dbID ){
-	  warn "You are trying to store a pre-exiting AnnotatedFeature association";
-	  return;
-	}
-  }
+    my $sth = $self->prepare(
+"INSERT INTO motif_feature_peak (motif_feature_id, peak_id) VALUES (?, ?)"
+    );
 
+    $sth->bind_param( 1, $mf->dbID,   SQL_INTEGER );
+    $sth->bind_param( 2, $peak->dbID, SQL_INTEGER );
+    $sth->execute();
 
-  #Validate MotifFeature is entirely contained within the AnnotatedFeature
+    # $mf->{associated_Peak} = $peak;
 
-  #if(! (( $mf->seq_region_start <= $af->seq_region_end)  &&
-  #( $mf->seq_region_end   >= $af->seq_region_start))){
-  #
-  #	throw('MotifFeature is not entirely contained within associated AnnotatedFeature');
-  #  }
-
-
-  my $sth = $self->prepare("
-		INSERT INTO associated_motif_feature (
-			annotated_feature_id, motif_feature_id
-		) VALUES (?, ?)
-	");
-
-  $sth->bind_param(1, $af->dbID, SQL_INTEGER);
-  $sth->bind_param(2, $mf->dbID, SQL_INTEGER);
-  $sth->execute();
-
-
-  push @{$mf->{associated_annotated_features}}, $af;
-
-  return $mf;
+    return $mf;
 }
 
+=head2 store_associated_RegulatoryFeature
 
+  Args[1]    : Bio::EnsEMBL::Funcgen::MotifFeature
+  Args[2]    : Bio::EnsEMBL::Funcgen::RegulatoryFeature
+  Example    : $mfa->store_associated_RegulatoryFeature($mf, $regulatory_feature);
+  Description: Store link between RegulatoryFeatures and MotifFeatures
+  Returntype : Bio::EnsEMBL::Funcgen::MotifFeature
+  Exceptions : Throws if args are not valid, warns if association already exists
+  Caller     : General
+  Status     : Stable
 
+=cut
+
+sub store_associated_RegulatoryFeature {
+	my ( $self, $mf, $regulatory_feature, $epigenome, $has_matching_Peak ) = @_;
+
+	$self->db->is_stored_and_valid( 'Bio::EnsEMBL::Funcgen::RegulatoryFeature', $regulatory_feature );
+	
+  my $epigenome_id = undef;
+  if ($epigenome){
+    $self->db->is_stored_and_valid( 'Bio::EnsEMBL::Funcgen::Epigenome', $epigenome );
+    $epigenome_id = $epigenome->dbID();
+  }
+
+	# Replace provided motif feature with the one which is stored in the db
+	my $existing_motif_feature= 
+    $self->fetch_by_BindingMatrix_Slice_start_strand
+    ($mf->binding_matrix(), $mf->slice(), $mf->start(), $mf->strand() );
+
+	$self->db->is_stored_and_valid( 'Bio::EnsEMBL::Funcgen::MotifFeature', $existing_motif_feature );
+	$mf = $existing_motif_feature;
+
+    # Validate MotifFeature is entirely contained within the Peak
+    if (
+        !(
+               ( $regulatory_feature->seq_region_start <= $mf->seq_region_start )
+            && ( $mf->seq_region_end <= $regulatory_feature->seq_region_end )
+        )
+      )
+    {
+        throw('MotifFeature is not entirely contained within associated RegulatoryFeature');
+    }
+
+    my $sth = $self->prepare(
+"INSERT INTO motif_feature_regulatory_feature 
+(motif_feature_id, regulatory_feature_id, epigenome_id, has_matching_Peak) VALUES (?, ?, ?, ?)"
+    );
+
+    $sth->bind_param( 1, $mf->dbID,   SQL_INTEGER );
+    $sth->bind_param( 2, $regulatory_feature->dbID, SQL_INTEGER );
+    $sth->bind_param( 3, $epigenome_id, SQL_INTEGER );
+    $sth->bind_param( 4, $has_matching_Peak, SQL_TINYINT );
+    $sth->execute();
+
+    # push @{ $mf->{associated_Peaks} }, $peak;
+
+    return $mf;
+}
 
 =head2 fetch_by_interdb_stable_id
 
@@ -608,8 +700,5 @@ sub fetch_by_interdb_stable_id {
 
   return $self->generic_fetch('mf.interdb_stable_id=?')->[0];
 }
-
-
-
 
 1;
