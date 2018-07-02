@@ -151,7 +151,7 @@ sub name { return shift->{name}; }
 sub unit {
     my ( $self, $unit ) = @_;
 
-    $self->_elements();
+    # $self->_elements();
 
     if ($unit && $self->_unit_is_valid($unit)) {
         $self->{unit} = $unit;
